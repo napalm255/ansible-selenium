@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Debug
+      debug: var=inventory_hostname
+
+    - name: selenium
+      selenium:
+        url: http://www.python.org
+        title: Python
