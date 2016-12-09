@@ -11,3 +11,17 @@
       selenium:
         url: http://www.python.org
         title: Python
+        login:
+          username: someuser
+          password: somepass
+          form_id: loginform
+          username_id: username
+          password_id: passwd
+        steps:
+          - step:
+              click:
+                type: 'find_element_by_link_text'
+                text: 'About'
+              wait_for:
+                type: 'LINK_TEXT'
+                text: 'Conferences and Workshops'

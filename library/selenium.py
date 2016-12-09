@@ -43,6 +43,9 @@ EXAMPLES = '''
 from ansible.module_utils.basic import AnsibleModule
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from ansible.module_utils._text import to_native
 
 
@@ -52,6 +55,8 @@ def main():
         argument_spec=dict(
             url=dict(required=True, type='str'),
             title=dict(type='str'),
+            login=dict(type='dict', required=True),
+            steps=dict(type='list', required=True),
         ),
         supports_check_mode=True
     )
@@ -60,17 +65,24 @@ def main():
 
     result = {}
     try:
-        driver = webdriver.PhantomJS()
-        driver.get(args['url'])
+        browser = webdriver.PhantomJS()
+        browser.set_window_size(1024, 768)
+        browser.get(args['url'])
         if args['title']:
-            assert args['title'] in driver.title
+            assert args['title'] in browser.title
             result['title'] = True
-        elem = driver.find_element_by_name("q")
-        elem.clear()
-        elem.send_keys("pycon")
-        elem.send_keys(Keys.RETURN)
-        assert "No results found." not in driver.page_source
-        driver.close()
+
+        for step in args['steps']:
+            step_method = getattr(browser, step['step']['click']['type'])
+            step_method(step['step']['click']['text']).click()
+            elem_type = getattr(By, step['step']['wait_for']['type'])
+            elem_text = step['step']['wait_for']['text']
+            WebDriverWait(browser, 2).until(
+                EC.presence_of_element_located((elem_type, elem_text))
+            )
+            result['test'] = str(browser.get_screenshot_as_base64())
+            browser.get_screenshot_as_file('/tmp/testing.png')
+        browser.close()
         result['changed'] = False
     except AssertionError:
         result['failed'] = True
