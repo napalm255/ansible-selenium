@@ -8,7 +8,7 @@
       debug: var=inventory_hostname
 
     - name: selenium
-      selenium:
+      selenium_test:
         url: http://www.python.org
         title: Python
         width: 1024
@@ -19,30 +19,36 @@
         screenshot_when: ['start', 'end', 'error', 'all']
         validate_cert: True
         steps:
-          - step:
-              click:
-                type: 'find_element_by_link_text'
-                text: 'About'
-              wait_for:
-                type: 'LINK_TEXT'
-                text: 'Conferences and Workshops'
-          - step:
-              click:
-                type: 'find_element_by_link_text'
-                text: 'Downloads'
-              wait_for:
-                type: 'LINK_TEXT'
-                text: 'Download Python 3.5.2'
-          - step:
-              name: Documentation
-              click:
-                type: 'find_element_by_link_text'
+          - name: Login
+            keys:
+              type: 'find_element_by_id'
+              value: 'id-search-field'
+              text: 'garbage'
+              key: 'RETURN'
+            wait_for:
+              type: 'LINK_TEXT'
+              text: 'Python 2.0'
+          - click:
+              type: 'find_element_by_link_text'
+              text: 'About'
+            wait_for:
+              type: 'LINK_TEXT'
+              text: 'Conferences and Workshops'
+          - click:
+              type: 'find_element_by_link_text'
+              text: 'Downloads'
+            wait_for:
+              type: 'LINK_TEXT'
+              text: 'Download Python 3.5.2'
+          - name: Documentation
+            click:
+              type: 'find_element_by_link_text'
+              text: 'Documentation'
+            wait_for:
+              type: 'LINK_TEXT'
+              text: 'Python 3.x Docs'
+            assert:
+              - type: 'find_element_by_link_text'
                 text: 'Documentation'
-              wait_for:
-                type: 'LINK_TEXT'
-                text: 'Python 3.x Docs'
-              assert:
-                - type: 'find_element_by_link_text'
-                  text: 'Documentation'
-                - type: 'find_element_by_link_text'
-                  text: 'Documentation'
+              - type: 'find_element_by_link_text'
+                text: 'Documentation'
