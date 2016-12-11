@@ -11,12 +11,13 @@
       selenium:
         url: http://www.python.org
         title: Python
-        login:
-          username: someuser
-          password: somepass
-          form_id: loginform
-          username_id: username
-          password_id: passwd
+        width: 1024
+        height: 768
+        screenshot: true
+        screenshot_prefix: python_
+        screenshot_type: file
+        screenshot_when: ['start', 'end', 'error', 'all']
+        validate_cert: True
         steps:
           - step:
               click:
@@ -25,3 +26,23 @@
               wait_for:
                 type: 'LINK_TEXT'
                 text: 'Conferences and Workshops'
+          - step:
+              click:
+                type: 'find_element_by_link_text'
+                text: 'Downloads'
+              wait_for:
+                type: 'LINK_TEXT'
+                text: 'Download Python 3.5.2'
+          - step:
+              name: Documentation
+              click:
+                type: 'find_element_by_link_text'
+                text: 'Documentation'
+              wait_for:
+                type: 'LINK_TEXT'
+                text: 'Python 3.x Docs'
+              assert:
+                - type: 'find_element_by_link_text'
+                  text: 'Documentation'
+                - type: 'find_element_by_link_text'
+                  text: 'Documentation'
