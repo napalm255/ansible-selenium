@@ -108,8 +108,8 @@ EXAMPLES = '''
 - selenium_test: url=http://www.python.org
 '''
 
-
 # pylint: disable = wrong-import-position
+from urlparse import urlparse  # noqa
 from ansible.module_utils.basic import AnsibleModule  # noqa
 try:
     from selenium import webdriver
@@ -119,10 +119,9 @@ try:
     from selenium.webdriver.support import expected_conditions as EC
     from selenium.common.exceptions import NoSuchElementException
     from selenium.common.exceptions import TimeoutException
+    SELENIUM_INSTALLED = True
 except ImportError:
     SELENIUM_INSTALLED = False
-else:
-    SELENIUM_INSTALLED = True
 
 
 class AnsibleSelenium(object):
@@ -131,10 +130,9 @@ class AnsibleSelenium(object):
     def __init__(self, module):
         """Init."""
         self.module = module
-        self.args = module.params
         self.arg = lambda: None
-        for arg in self.args:
-            setattr(self.arg, arg, self.args[arg])
+        for arg in self.module.params:
+            setattr(self.arg, arg, self.module.params[arg])
 
         self.steps_num = len(self.arg.steps) - 1
         self.result = {'changed': False,
@@ -143,31 +141,43 @@ class AnsibleSelenium(object):
                            'steps': [],
                            'num': self.steps_num
                        }}
+
         self.browser = self._browser()
 
-        if 'http' not in self.arg.url:
+    def __enter__(self):
+        """Enter by loading website and return self."""
+        # validate url
+        url_parsed = urlparse(self.arg.url)
+        if url_parsed.scheme not in ['http', 'https']:
+            self.failed('invalid url.')
+        if not url_parsed.netloc:
             self.failed('invalid url.')
 
-    def __enter__(self):
-        """Enter."""
-        self.load()
+        # load browser
+        self.browser.get(self.arg.url)
+        self.result['browser_closed'] = False
+
+        # validate title
+        if self.arg.title in self.browser.title:
+            self.result['results']['title'] = True
+        else:
+            self.result['results']['title'] = False
+            self.failed('title does not match.')
+
+        # process steps
+        self.steps()
+
         return self
 
     def __exit__(self, type, value, traceback):
-        """Exit."""
+        """Exit by closing and quitting the browser."""
         # pylint: disable = redefined-builtin
-        self.close()
-
-    def load(self):
-        """Load website."""
-        self.browser.get(self.arg.url)
-
-    def close(self):
-        """Close."""
         self.browser.close()
+        self.browser.quit()
+        self.result['browser_closed'] = True
 
     def _browser(self):
-        """Return browser."""
+        """Select browser and return object."""
         name = self.arg.browser
         if 'phantomjs' in name:
             return self._phantomjs()
@@ -200,7 +210,7 @@ class AnsibleSelenium(object):
 
     def failed(self, msg, step=None):
         """Failed."""
-        self.result['failed'] = True
+        # self.result['failed'] = True
         self.result['msg'] = msg
         if step:
             step['error'] = True
@@ -211,7 +221,7 @@ class AnsibleSelenium(object):
             self.result['results']['steps'].append(step)
         else:
             self.result['results']['screenshot'] = self.screenshot('failed')
-        self.module.exit_json(**self.result)
+        self.module.fail_json(**self.result)
 
     def screenshot(self, suffix='default'):
         """Screenshot."""
@@ -285,7 +295,7 @@ class AnsibleSelenium(object):
 
     def asserts(self, step, step_result):
         """Assertions."""
-        step_result['assert'] = True
+        step_result['assert'] = False
         step_result['assert_results'] = []
         for aidx, item in enumerate(step['assert']):
             step_result['assert_results'].append(False)
@@ -300,6 +310,43 @@ class AnsibleSelenium(object):
             step_result['assert_results'][aidx] = True
         step_result['assert'] = True
         return step_result
+
+    def steps(self):
+        """Loop through steps."""
+        for idx, step in enumerate(self.arg.steps):
+            step_result = {'id': idx,
+                           'screenshot': 'no'}
+            if 'name' in step:
+                step_result['name'] = step['name']
+
+            if 'keys' in step:
+                step_result.update(self.keys(step, step_result))
+
+            if 'click' in step:
+                step_result.update(self.click(step, step_result))
+
+            if 'wait_for' in step:
+                step_result.update(self.wait_for(step, step_result))
+
+            if 'assert' in step:
+                step_result.update(self.asserts(step, step_result))
+
+            when = self.arg.screenshot_when
+            if self.arg.screenshot:
+                capture = False
+                if 'all' in when:
+                    capture = True
+                elif 'start' in when and idx is 0:
+                    capture = True
+                elif 'end' in when and idx is self.steps_num:
+                    capture = True
+
+                if capture:
+                    suffix = idx
+                    if 'name' in step:
+                        suffix = '%s_%s' % (idx, step['name'])
+                    step_result['screenshot'] = self.screenshot(suffix)
+            self.result['results']['steps'].append(step_result)
 
 
 def main():
@@ -329,52 +376,13 @@ def main():
 
     # check selenium dependency
     if not SELENIUM_INSTALLED:
-        module.fail_json(msg='Selenium not installed.')
+        module.fail_json(msg='selenium not installed.')
 
     # initiate module
+    results = {'failed': True, 'msg': 'something went wrong'}
     with AnsibleSelenium(module) as sel:
-        # validate title
-        if sel.arg.title in sel.browser.title:
-            sel.result['results']['title'] = True
-        else:
-            sel.result['results']['title'] = False
-            sel.failed('title does not match')
-
-        # process each step
-        for idx, step in enumerate(sel.arg.steps):
-            step_result = {'id': idx,
-                           'screenshot': 'no'}
-            if 'name' in step:
-                step_result['name'] = step['name']
-
-            if 'keys' in step:
-                step_result.update(sel.keys(step, step_result))
-
-            if 'click' in step:
-                step_result.update(sel.click(step, step_result))
-
-            if 'wait_for' in step:
-                step_result.update(sel.wait_for(step, step_result))
-
-            if 'assert' in step:
-                step_result.update(sel.asserts(step, step_result))
-
-            if sel.arg.screenshot:
-                capture = False
-                if 'all' in sel.arg.screenshot_when:
-                    capture = True
-                elif 'start' in sel.arg.screenshot_when and idx is 0:
-                    capture = True
-                elif 'end' in sel.arg.screenshot_when and idx is sel.steps_num:
-                    capture = True
-
-                if capture:
-                    suffix = idx
-                    if 'name' in step:
-                        suffix = '%s_%s' % (idx, step['name'])
-                    step_result['screenshot'] = sel.screenshot(suffix)
-            sel.result['results']['steps'].append(step_result)
-        module.exit_json(**sel.result)
+        results = sel.result
+    module.exit_json(**results)
 
 
 if __name__ == '__main__':
