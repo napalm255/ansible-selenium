@@ -38,10 +38,11 @@ options:
 
 EXAMPLES = '''
 # run basic check against given url
-- selenium: url=http://www.python.org
+- selenium_test: url=http://www.python.org
 '''
 
 
+# TODO: Add check for selenium and json exit on fail
 # pylint: disable = wrong-import-position
 from ansible.module_utils.basic import AnsibleModule  # noqa
 from selenium import webdriver  # noqa
