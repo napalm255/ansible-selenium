@@ -157,9 +157,9 @@ class AnsibleSelenium(object):
             details['file'] = path
         return details
 
-    def keys(self, step):
+    def keys(self, step, step_result):
         """Keys."""
-        step_result = {'keys': False}
+        step_result['keys'] = False
         try:
             keys_method = getattr(self.browser, step['keys']['type'])
             if 'text' in step['keys']:
@@ -177,9 +177,9 @@ class AnsibleSelenium(object):
         step_result['keys'] = True
         return step_result
 
-    def click(self, step):
+    def click(self, step, step_result):
         """Click."""
-        step_result = {'click': False}
+        step_result['click'] = False
         try:
             click_method = getattr(self.browser, step['click']['type'])
             click_method(step['click']['text']).click()
@@ -192,30 +192,31 @@ class AnsibleSelenium(object):
         step_result['click'] = True
         return step_result
 
-    def wait_for(self, step):
+    def wait_for(self, step, step_result):
         """Wait for."""
-        step_result = {'wait_for': False}
+        step_result['wait_for'] = False
         try:
+            waitfor_method = getattr(EC, step['wait_for']['method'])
             waitfor_type = getattr(By, step['wait_for']['type'])
             waitfor_text = step['wait_for']['text']
         except KeyError:
             self.failed('configuration failure. check syntax.', step_result)
         except AttributeError:
-            self.failed('type error. check syntax.', step_result)
+            self.failed('method or type error. check syntax.', step_result)
 
         try:
             WebDriverWait(self.browser, self.arg.explicit_wait).until(
-                EC.presence_of_element_located((waitfor_type,
-                                                waitfor_text))
+                waitfor_method((waitfor_type, waitfor_text))
             )
         except TimeoutException:
             self.failed('failure waiting for element.', step_result)
         step_result['wait_for'] = True
         return step_result
 
-    def asserts(self, step):
+    def asserts(self, step, step_result):
         """Assertions."""
-        step_result = {'assert': False, 'assert_results': []}
+        step_result['assert'] = True
+        step_result['assert_results'] = []
         for aidx, item in enumerate(step['assert']):
             step_result['assert_results'].append(False)
             try:
@@ -273,16 +274,16 @@ def main():
                 step_result['name'] = step['name']
 
             if 'keys' in step:
-                step_result.update(sel.keys(step))
+                step_result.update(sel.keys(step, step_result))
 
             if 'click' in step:
-                step_result.update(sel.click(step))
+                step_result.update(sel.click(step, step_result))
 
             if 'wait_for' in step:
-                step_result.update(sel.wait_for(step))
+                step_result.update(sel.wait_for(step, step_result))
 
             if 'assert' in step:
-                step_result.update(sel.asserts(step))
+                step_result.update(sel.asserts(step, step_result))
 
             if sel.arg.screenshot:
                 capture = False
