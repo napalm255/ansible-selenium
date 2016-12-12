@@ -9,7 +9,8 @@
 
     - name: selenium
       selenium_test:
-        url: http://www.python.org
+        url: https://www.python.org
+        browser: phantomjs
         title: Python
         width: 1024
         height: 768
@@ -26,18 +27,21 @@
               text: 'garbage'
               key: 'RETURN'
             wait_for:
+              method: 'presence_of_element_located'
               type: 'LINK_TEXT'
               text: 'Python 2.0'
           - click:
               type: 'find_element_by_link_text'
               text: 'About'
             wait_for:
+              method: 'presence_of_element_located'
               type: 'LINK_TEXT'
               text: 'Conferences and Workshops'
           - click:
               type: 'find_element_by_link_text'
               text: 'Downloads'
             wait_for:
+              method: 'presence_of_element_located'
               type: 'LINK_TEXT'
               text: 'Download Python 3.5.2'
           - name: Documentation
@@ -45,6 +49,7 @@
               type: 'find_element_by_link_text'
               text: 'Documentation'
             wait_for:
+              method: 'presence_of_element_located'
               type: 'LINK_TEXT'
               text: 'Python 3.x Docs'
             assert:
