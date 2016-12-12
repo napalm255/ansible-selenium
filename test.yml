@@ -17,7 +17,7 @@
         screenshot: true
         screenshot_prefix: python_
         screenshot_type: file
-        screenshot_when: ['start', 'end', 'error', 'all']
+        screenshot_when: ['start', 'end', 'error']
         validate_cert: True
         steps:
           - name: Login
@@ -30,14 +30,16 @@
               method: 'presence_of_element_located'
               type: 'LINK_TEXT'
               text: 'Python 2.0'
-          - click:
+          - name: About
+            click:
               type: 'find_element_by_link_text'
               text: 'About'
             wait_for:
               method: 'presence_of_element_located'
               type: 'LINK_TEXT'
               text: 'Conferences and Workshops'
-          - click:
+          - name: Downloads
+            click:
               type: 'find_element_by_link_text'
               text: 'Downloads'
             wait_for:
@@ -54,6 +56,6 @@
               text: 'Python 3.x Docs'
             assert:
               - type: 'find_element_by_link_text'
-                text: 'Documentation'
+                text: 'Python 3.x Docs'
               - type: 'find_element_by_link_text'
-                text: 'Documentation'
+                text: 'Python 2.x Docs'
