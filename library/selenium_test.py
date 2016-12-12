@@ -109,7 +109,16 @@ EXAMPLES = '''
 '''
 
 # pylint: disable = wrong-import-position
-from urlparse import urlparse  # noqa
+import sys  # noqa
+try:
+    if sys.version_info < (3, 0):
+        from urlparse import urlparse  # noqa
+    else:
+        from urllib.parse import urlparse  # noqa
+    URLPARSE_INSTALLED = True
+except ImportError:
+    URLPARSE_INSTALLED = False
+
 from ansible.module_utils.basic import AnsibleModule  # noqa
 try:
     from selenium import webdriver
@@ -373,6 +382,10 @@ def main():
         ),
         supports_check_mode=False
     )
+
+    # check urlparse dependency
+    if not URLPARSE_INSTALLED:
+        module.fail_json(msg='urlparse not installed.')
 
     # check selenium dependency
     if not SELENIUM_INSTALLED:
