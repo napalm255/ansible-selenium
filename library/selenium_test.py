@@ -42,16 +42,20 @@ EXAMPLES = '''
 '''
 
 
-# TODO: Add check for selenium and json exit on fail
 # pylint: disable = wrong-import-position
 from ansible.module_utils.basic import AnsibleModule  # noqa
-from selenium import webdriver  # noqa
-from selenium.webdriver.common.keys import Keys  # noqa
-from selenium.webdriver.common.by import By  # noqa
-from selenium.webdriver.support.ui import WebDriverWait  # noqa
-from selenium.webdriver.support import expected_conditions as EC  # noqa
-from selenium.common.exceptions import NoSuchElementException  # noqa
-from selenium.common.exceptions import TimeoutException  # noqa
+try:
+    from selenium import webdriver
+    from selenium.webdriver.common.keys import Keys
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.common.exceptions import NoSuchElementException
+    from selenium.common.exceptions import TimeoutException
+except ImportError:
+    SELENIUM_INSTALLED = False
+else:
+    SELENIUM_INSTALLED = True
 
 
 class AnsibleSelenium(object):
@@ -255,8 +259,12 @@ def main():
             implicit_wait=dict(type='int', default=20),
             validate_cert=dict(type='bool', default=True),
         ),
-        supports_check_mode=True
+        supports_check_mode=False
     )
+
+    # check selenium dependency
+    if not SELENIUM_INSTALLED:
+        module.fail_json(msg='Selenium not installed.')
 
     # initiate module
     with AnsibleSelenium(module) as sel:
