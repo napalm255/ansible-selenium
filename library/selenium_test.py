@@ -26,14 +26,81 @@ module: selenium_test
 author: "Brad Gibson"
 version_added: "2.3"
 short_description: Run selenium tests
-requirements: [ phantomjs, firefox, chrome ]
+requires: [ selenium>=3.0.2 ]
 description:
-    - Run selenium tests against url.
+    - Run selenium tests against provided URL.
+    - Use Clicks, Typing, Waiting and Assertions.
 options:
     url:
         required: true
         description:
             - URL to run selenium tests against.
+    browser:
+        required: false
+        default: "phantomjs"
+        choices: [ "phantomjs", "firefox", "chrome" ]
+        description:
+            - Browser to use for testing.
+    width:
+        required: false
+        default: 1024
+        description:
+            - Browser screen width.
+    height:
+        required: false
+        default: 768
+        description:
+            - Browser screen height.
+    title:
+        required: false
+        description:
+            - Title to validate after initial load.
+    screenshot:
+        required: false
+        default: false
+        description:
+            - Enable/Disable screenshots.
+    screenshot_when:
+        required: false
+        default: [ "error" ]
+        choices: [ "all", "start", "end", "error" ]
+        description:
+            - Enable/Disable screenshots.
+    screenshot_type:
+        required: false
+        default: "base64"
+        choices: [ "base64", "file" ]
+        description:
+            - Screenshot format.
+    screenshot_path:
+        required: false
+        default: "/tmp"
+        description:
+            - Screenshot path.
+    screenshot_prefix:
+        required: false
+        default: "selenium_"
+        description:
+            - Screenshot file prefix.
+    implicit_wait:
+        required: false
+        default: 20
+        description:
+            - Implicit wait value when loading webpage.
+    explicit_wait:
+        required: false
+        default: 2
+        description:
+            - Explicit wait value when loading webpage.
+    steps:
+        required: true
+        description:
+            - Steps to perform.
+    validate_cert:
+        required: false
+        default: true
+        description:
+            - Validate SSL certificate.
 '''
 
 EXAMPLES = '''
@@ -102,14 +169,12 @@ class AnsibleSelenium(object):
     def _browser(self):
         """Return browser."""
         name = self.arg.browser
-        driver = None
         if 'phantomjs' in name:
-            driver = self._phantomjs()
+            return self._phantomjs()
         elif 'firefox' in name:
-            driver = self._firefox()
+            return self._firefox()
         elif 'chrome' in name:
-            driver = self._chrome()
-        return driver
+            return self._chrome()
 
     def _phantomjs(self):
         """Use PhantomJS browser."""
